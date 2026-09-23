@@ -373,6 +373,45 @@ export async function generateSegregationPdf(
       head: [['Section', 'Max marks', ...a.bands.map((b) => b.label)]],
       body: a.secCats.map((x) => [pt(x.name), x.max, ...x.cats.map((c) => `${c.n} (${c.pct.toFixed(1)}%)`)]),
     });
+
+    a.secCats.forEach((section) => {
+      h2(`${section.name}: student details`);
+      section.cats.forEach((category) => {
+        ensure(18);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(category.rgb[0], category.rgb[1], category.rgb[2]);
+        doc.text(pt(`${category.label} (${category.n})`), M, y);
+        y += 4;
+
+        if (!category.list.length) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.5);
+          doc.setTextColor(MUTED[0], MUTED[1], MUTED[2]);
+          doc.text('No candidates in this category.', M, y);
+          y += 10;
+          return;
+        }
+
+        tbl({
+          head: [['#', ...(d.hasId ? ['Member ID'] : []), 'Name', ...(d.hasGroup ? ['Group'] : []), 'Score', '% of section']],
+          body: category.list.map((c, i) => [
+            i + 1,
+            ...(d.hasId ? [pt(c.id)] : []),
+            pt(c.name),
+            ...(d.hasGroup ? [pt(shortGroup(c.group))] : []),
+            `${c.scores[section.idx].toFixed(1)} / ${section.max}`,
+            `${((c.scores[section.idx] / section.max) * 100).toFixed(1)}%`,
+          ]),
+          styles: { fontSize: 7.5, cellPadding: 1.5, textColor: INK, lineColor: LINE },
+          columnStyles: {
+            0: { cellWidth: 8 },
+            [1 + (d.hasId ? 1 : 0) + (d.hasGroup ? 1 : 0)]: { halign: 'right' },
+            [2 + (d.hasId ? 1 : 0) + (d.hasGroup ? 1 : 0)]: { halign: 'right' },
+          },
+        });
+      });
+    });
   }
 
   // Appendix: unattempted candidates

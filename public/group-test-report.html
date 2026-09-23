@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Test Report Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#F4F5F8; --surface:#FFFFFF; --ink:#151B2B; --muted:#5B6478; --rule:#D9DDE6;
+  --primary:#26307A; --on-primary:#FFFFFF; --primary-soft:#E8EAF7; --focus:#2F5BFF;
+  --c1:#26307A; --c2:#1F8A8A; --c3:#D9A21B; --c4:#D8452E; --c5:#8A4F9E; --c6:#6B7A90;
+  --b-ex:#1E7F5C; --b-good:#8CC084; --b-avg:#E0A526; --b-low:#D8452E;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F121A; --surface:#171B26; --ink:#E9ECF3; --muted:#9AA3B6; --rule:#2B3242;
+    --primary:#9AA7FF; --on-primary:#10142B; --primary-soft:#22284A; --focus:#8CA2FF;
+    --c1:#8F9CFF; --c2:#4DC0BE; --c3:#E7B93F; --c4:#F0705A; --c5:#C08BD6; --c6:#93A0B5;
+    --b-ex:#3FB68A; --b-good:#97CC8F; --b-avg:#E6B23A; --b-low:#F0705A;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F121A; --surface:#171B26; --ink:#E9ECF3; --muted:#9AA3B6; --rule:#2B3242;
+  --primary:#9AA7FF; --on-primary:#10142B; --primary-soft:#22284A; --focus:#8CA2FF;
+  --c1:#8F9CFF; --c2:#4DC0BE; --c3:#E7B93F; --c4:#F0705A; --c5:#C08BD6; --c6:#93A0B5;
+  --b-ex:#3FB68A; --b-good:#97CC8F; --b-avg:#E6B23A; --b-low:#F0705A;
+  color-scheme:dark;
+}
+html{background:var(--bg);scroll-padding-top:calc(env(safe-area-inset-top,0px) + 112px);height:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--serif);font-weight:500;margin:0;letter-spacing:-.01em;line-height:1.15}
+p{margin:0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+
+/* top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--rule)}
+.topbar .wrap{display:flex;align-items:center;gap:20px;min-height:56px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.brand svg{flex:none}
+.jump{display:flex;gap:4px;margin-left:12px;overflow-x:auto;scrollbar-width:none}
+.jump a{padding:6px 12px;border-radius:6px;color:var(--muted);text-decoration:none;font-size:14px;white-space:nowrap}
+.jump a:hover{color:var(--ink);background:var(--primary-soft)}
+.topbar .spacer{flex:1}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:6px;border:1px solid var(--rule);background:var(--surface);cursor:pointer;font-weight:500;line-height:1.2}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.6;cursor:progress}
+.btn.block{width:100%}
+.btn.small{padding:7px 12px;font-size:14px}
+
+/* intro */
+.intro{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:64px;align-items:center;padding-top:64px;padding-bottom:72px}
+.intro h1{font-size:clamp(34px,5vw,56px);font-weight:500;max-width:15em}
+.lede{font-size:18px;color:var(--muted);margin-top:20px;max-width:34em}
+.drop{margin-top:32px;border:1.5px dashed var(--muted);border-radius:10px;background:var(--surface);padding:32px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:14px;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--primary);background:var(--primary-soft)}
+.drop strong{font-family:var(--serif);font-size:22px;font-weight:500}
+.drop .sub{color:var(--muted);font-size:14px}
+.fine{margin-top:14px;font-size:13.5px;color:var(--muted);max-width:40em}
+.err{margin-top:14px;padding:12px 14px;border-left:4px solid var(--b-low);background:color-mix(in srgb,var(--b-low) 12%,transparent);border-radius:0 6px 6px 0;font-size:14.5px}
+details.format{margin-top:22px;border-top:1px solid var(--rule);padding-top:14px}
+details.format summary{cursor:pointer;font-weight:500}
+details.format ul{margin:12px 0 0;padding-left:20px;color:var(--muted);font-size:14.5px;display:grid;gap:6px}
+details.format code{font:500 13px/1.4 ui-monospace,Menlo,Consolas,monospace;background:var(--primary-soft);padding:1px 5px;border-radius:4px;color:var(--ink);word-break:break-word}
+.sheet{justify-self:center;width:min(100%,360px)}
+.sheet svg{width:100%;height:auto;display:block;filter:drop-shadow(0 10px 24px rgba(20,27,43,.16))}
+.sheet figcaption{margin-top:14px;font-size:13.5px;color:var(--muted);text-align:center}
+
+/* app layout */
+.filebar{display:flex;align-items:center;gap:16px;padding:18px 0;flex-wrap:wrap}
+.filebar .file{font-weight:600}
+.filebar .meta{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:40px;align-items:start;padding-bottom:80px}
+.panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px;display:grid;gap:14px;max-height:calc(100vh - 96px);overflow:auto}
+.panel h2{font-size:18px;padding-top:6px}
+.panel h2:first-child{padding-top:0}
+.field{display:grid;gap:5px}
+.field label,.field .lab{font-size:13px;font-weight:500;color:var(--muted)}
+.field input[type=text],.field select{width:100%;padding:9px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);min-height:40px}
+.field input[type=text]:focus,.field select:focus{border-color:var(--primary)}
+.range{display:flex;align-items:center;gap:12px}
+.range input{flex:1;accent-color:var(--primary)}
+.range output{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;cursor:pointer}
+.check input{margin-top:3px;accent-color:var(--primary);width:16px;height:16px;flex:none}
+.actions{display:grid;gap:10px}
+.panel hr{border:0;border-top:1px solid var(--rule);margin:4px 0;width:100%}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.4}
+
+/* report */
+.report{min-width:0}
+.rp-head{padding-bottom:26px}
+.rp-org{font-size:15px;color:var(--muted);min-height:1.55em}
+.rp-head h1{font-size:clamp(30px,4vw,44px);margin-top:4px;max-width:20em}
+.facts{display:flex;flex-wrap:wrap;gap:8px 36px;margin-top:18px}
+.facts div{display:grid}
+.facts dt{font-size:12.5px;color:var(--muted)}
+.facts dd{margin:0;font-weight:500}
+.facts{margin-bottom:0}
+dl.facts{margin:18px 0 0}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:2px solid var(--ink);border-bottom:1px solid var(--rule);background:var(--surface)}
+.kpi{padding:16px 18px 18px;border-left:1px solid var(--rule)}
+.kpi:first-child{border-left:0}
+.kpi .v{font-family:var(--serif);font-size:clamp(30px,3.2vw,42px);line-height:1.05;font-weight:500;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:.5em;color:var(--muted);margin-left:2px}
+.kpi .l{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.35}
+section.blk{margin-top:56px}
+section.blk>h2{font-size:26px;padding-top:12px;border-top:2px solid var(--ink)}
+section.blk>.lead{color:var(--muted);margin-top:6px;max-width:46em}
+.sub-h{font-size:18px;margin:32px 0 10px}
+.obs{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:0;max-width:52em}
+.obs li{display:grid;grid-template-columns:14px 1fr;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule)}
+.obs li::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--primary);margin-top:8px}
+.obs li.good::before{background:var(--b-ex)}
+.obs li.warn::before{background:var(--b-low)}
+.chart{position:relative;height:320px;margin-top:20px}
+.chart.tall{height:380px}
+.chart.short{height:260px}
+.scroll{overflow-x:auto;margin-top:14px;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.tbl th{font-weight:600;text-align:left;padding:9px 8px;border-bottom:1.5px solid var(--ink);white-space:nowrap;font-size:13px;vertical-align:bottom}
+.tbl td{padding:8px 8px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.tbl .num{text-align:right}
+.tbl th.num{text-align:right}
+.tbl td.name{white-space:normal;min-width:180px}
+.tbl small{color:var(--muted);font-size:12px;margin-left:4px}
+.tbl tr:hover td{background:color-mix(in srgb,var(--primary) 6%,transparent)}
+.tbl th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+.tbl th button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.tbl th[aria-sort="ascending"] button::after{content:"\25B2";font-size:9px}
+.tbl th[aria-sort="descending"] button::after{content:"\25BC";font-size:9px}
+.h-ex{background:color-mix(in srgb,var(--b-ex) 26%,transparent)}
+.h-good{background:color-mix(in srgb,var(--b-good) 30%,transparent)}
+.h-avg{background:color-mix(in srgb,var(--b-avg) 30%,transparent)}
+.h-low{background:color-mix(in srgb,var(--b-low) 26%,transparent)}
+.abs{color:var(--muted)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--rule);color:var(--muted);margin-right:4px;white-space:nowrap}
+.tag.warn{border-color:var(--b-low);color:var(--ink);background:color-mix(in srgb,var(--b-low) 14%,transparent)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:0 36px}
+.two>div{min-width:0}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.tools{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.tools input[type=search]{padding:9px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);min-width:240px;min-height:40px}
+.tools .count{color:var(--muted);font-size:14px}
+.empty{padding:24px;border:1px dashed var(--rule);border-radius:8px;color:var(--muted);margin-top:16px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:8px;font-size:14px;z-index:50;max-width:calc(100vw - 32px);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#offscreen{position:fixed;left:-99999px;top:0;width:1px;height:1px;overflow:hidden}
+
+@media (max-width:1020px){
+  .intro{grid-template-columns:1fr;gap:40px;padding-top:40px}
+  .sheet{display:none}
+  .layout{grid-template-columns:1fr;gap:28px}
+  .panel{position:static;max-height:none}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi:nth-child(odd){border-left:0}
+  .kpi{border-top:1px solid var(--rule)}
+  .kpi:nth-child(-n+2){border-top:0}
+  .jump{display:none}
+}
+@media (max-width:560px){
+  .wrap{padding:0 16px}
+  .chart{height:260px}
+  .chart.tall{height:300px}
+  .tools input[type=search]{min-width:0;width:100%}
+  .two{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="5" fill="var(--primary)"/><rect x="6" y="13" width="3.4" height="7" rx=".8" fill="var(--on-primary)"/><rect x="11.3" y="8" width="3.4" height="12" rx=".8" fill="var(--on-primary)"/><rect x="16.6" y="10.5" width="3.4" height="9.5" rx=".8" fill="var(--on-primary)"/></svg>
+      Test Report Builder
+    </div>
+    <nav class="jump" id="jump" aria-label="Report sections" hidden>
+      <a href="#s-overview">Overview</a>
+      <a href="#s-tests">Tests</a>
+      <a href="#s-sections" id="jumpSections">Sections</a>
+      <a href="#s-students">Students</a>
+      <a href="#s-all">All results</a>
+    </nav>
+    <div class="spacer"></div>
+    <button class="btn small" id="replaceTop" hidden>Change file</button>
+  </div>
+</header>
+
+<!-- Intro / upload -->
+<section class="wrap intro" id="intro">
+  <div>
+    <h1>Turn a test results sheet into a management report</h1>
+    <p class="lede">Upload the Excel export from your test platform. The page analyses participation, scores and section performance, and creates a PDF you can send as it is.</p>
+    <div class="drop" id="drop" role="button" tabindex="0" aria-label="Choose an Excel file or drop it here">
+      <strong>Drop the Excel file here</strong>
+      <span class="sub">.xlsx, .xls or .csv</span>
+      <span class="btn primary" aria-hidden="true">Choose file</span>
+    </div>
+    <div class="err" id="err" role="alert" hidden></div>
+    <p class="fine">The file is read inside your browser and is not uploaded anywhere. Email addresses in the sheet are never shown in the report.</p>
+    <details class="format">
+      <summary>What the sheet needs</summary>
+      <ul>
+        <li>One row per student, with <code>Name</code> and <code>Group</code> columns. Member Id is used when present.</li>
+        <li>One column per test, with the maximum marks in brackets at the end of the heading, for example <code>345 - AptitudeTraining-Test-04 [non-proctored] (20)</code>.</li>
+        <li>Students who did not appear can be marked <code>Absent</code> or left blank.</li>
+        <li>Footer lines such as “Generated By” are ignored.</li>
+      </ul>
+    </details>
+  </div>
+  <figure class="sheet" aria-hidden="true">
+    <svg viewBox="0 0 320 420" xmlns="http://www.w3.org/2000/svg">
+      <rect width="320" height="420" rx="4" fill="#fff"/>
+      <rect width="320" height="74" rx="4" fill="#26307A"/><rect y="60" width="320" height="14" fill="#26307A"/>
+      <rect x="20" y="20" width="70" height="6" rx="3" fill="#fff" opacity=".6"/>
+      <rect x="20" y="36" width="190" height="11" rx="3" fill="#fff"/>
+      <rect x="20" y="53" width="120" height="6" rx="3" fill="#fff" opacity=".6"/>
+      <g fill="#EEF0F6"><rect x="20" y="90" width="280" height="42"/></g>
+      <g fill="#26307A"><rect x="30" y="99" width="30" height="12" rx="2"/><rect x="86" y="99" width="30" height="12" rx="2"/><rect x="142" y="99" width="30" height="12" rx="2"/><rect x="198" y="99" width="30" height="12" rx="2"/><rect x="254" y="99" width="30" height="12" rx="2"/></g>
+      <g fill="#9AA1B5"><rect x="30" y="118" width="38" height="4" rx="2"/><rect x="86" y="118" width="38" height="4" rx="2"/><rect x="142" y="118" width="38" height="4" rx="2"/><rect x="198" y="118" width="38" height="4" rx="2"/><rect x="254" y="118" width="38" height="4" rx="2"/></g>
+      <g fill="#D8452E"><circle cx="26" cy="152" r="3"/><circle cx="26" cy="168" r="3"/></g><g fill="#1E7F5C"><circle cx="26" cy="184" r="3"/></g>
+      <g fill="#C9CEDB"><rect x="36" y="150" width="220" height="4" rx="2"/><rect x="36" y="166" width="250" height="4" rx="2"/><rect x="36" y="182" width="190" height="4" rx="2"/></g>
+      <rect x="20" y="206" width="90" height="8" rx="2" fill="#151B2B"/>
+      <line x1="20" y1="222" x2="300" y2="222" stroke="#D9DDE6"/><line x1="20" y1="290" x2="300" y2="290" stroke="#D9DDE6"/><line x1="20" y1="256" x2="300" y2="256" stroke="#D9DDE6"/>
+      <g fill="#26307A"><rect x="44" y="246" width="30" height="44"/><rect x="102" y="240" width="30" height="50"/><rect x="160" y="232" width="30" height="58"/><rect x="218" y="238" width="30" height="52"/></g>
+      <polyline points="59,236 117,230 175,226 233,240" fill="none" stroke="#D8452E" stroke-width="2.4"/>
+      <g fill="#D8452E"><circle cx="59" cy="236" r="3"/><circle cx="117" cy="230" r="3"/><circle cx="175" cy="226" r="3"/><circle cx="233" cy="240" r="3"/></g>
+      <rect x="20" y="312" width="280" height="14" fill="#EEF0F6"/>
+      <g><rect x="20" y="332" width="280" height="12" fill="#E6F1D9"/><rect x="20" y="346" width="280" height="12" fill="#FBEFCB"/><rect x="20" y="360" width="280" height="12" fill="#F7D5CE"/><rect x="20" y="374" width="280" height="12" fill="#E6F1D9"/></g>
+      <g fill="#5B6478"><rect x="26" y="317" width="60" height="4" rx="2"/><rect x="26" y="336" width="90" height="4" rx="2"/><rect x="26" y="350" width="70" height="4" rx="2"/><rect x="26" y="364" width="100" height="4" rx="2"/><rect x="26" y="378" width="80" height="4" rx="2"/></g>
+    </svg>
+    <figcaption>Layout of the PDF: summary, test-wise results, section comparison and student lists.</figcaption>
+  </figure>
+</section>
+
+<!-- App -->
+<main id="app" hidden>
+  <div class="wrap">
+    <div class="filebar">
+      <div><span class="file" id="fileName"></span> <span class="meta" id="fileMeta"></span></div>
+    </div>
+    <div class="layout">
+      <aside class="panel" aria-label="Report settings">
+        <div class="actions">
+          <button class="btn primary block" id="btnPdf">Download PDF report</button>
+          <button class="btn block" id="btnXlsx">Download Excel summary</button>
+        </div>
+        <hr>
+        <h2>Report details</h2>
+        <div class="field"><label for="fTitle">Report title</label><input type="text" id="fTitle" autocomplete="off"></div>
+        <div class="field"><label for="fOrg">College or institution</label><input type="text" id="fOrg" placeholder="Name shown on the report" autocomplete="off"></div>
+        <div class="field"><label for="fBy">Prepared by</label><input type="text" id="fBy" placeholder="Name and designation" autocomplete="off"></div>
+        <hr>
+        <h2>Analysis</h2>
+        <div class="field"><label for="fGroup">Section</label><select id="fGroup"></select></div>
+        <div class="field">
+          <span class="lab" id="passLab">Pass mark</span>
+          <div class="range"><input type="range" id="fPass" min="30" max="80" step="5" value="50" aria-labelledby="passLab"><output id="passOut" for="fPass">50%</output></div>
+        </div>
+        <label class="check"><input type="checkbox" id="fZero" checked><span>Count absence as zero when ranking students</span></label>
+        <hr>
+        <h2>PDF contents</h2>
+        <label class="check"><input type="checkbox" id="fAnnex" checked><span>Student-wise results for every student</span></label>
+        <label class="check"><input type="checkbox" id="fNames" checked><span>Show student names in top and at-risk lists</span></label>
+        <p class="hint">When names are off, those lists show the Member Id instead.</p>
+      </aside>
+      <div class="report" id="report"></div>
+    </div>
+  </div>
+</main>
+
+<input type="file" id="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
+<div id="offscreen" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/*CORE_START*/
+'use strict';
+/* ---------- constants and helpers ---------- */
+const BANDS=[
+  {key:'ex',   label:'80% and above', short:'Excellent',     min:0.8},
+  {key:'good', label:'60% to 79%',    short:'Good',          min:0.6},
+  {key:'avg',  label:'40% to 59%',    short:'Average',       min:0.4},
+  {key:'low',  label:'Below 40%',     short:'Needs support', min:-Infinity}
+];
+const bandOf=p=>BANDS.find(b=>p+1e-9>=b.min);
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+const natural=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true});
+const toNum=v=>{
+  if(v===null||v===undefined)return null;
+  if(typeof v==='number')return Number.isFinite(v)?v:null;
+  const s=String(v).replace(/\u00a0/g,' ').trim().replace(/,/g,'');
+  return /^-?\d+(\.\d+)?$/.test(s)?parseFloat(s):null;
+};
+const pc=(v,d=0)=>(v==null||Number.isNaN(v))?'\u2014':(v*100).toFixed(d)+'%';
+const n1=v=>v==null?'\u2014':String(Math.round(v*10)/10);
+const m1=v=>v==null?'\u2014':v.toFixed(1);
+const pl=(n,w,p)=>n+' '+(n===1?w:(p||w+'s'));
+
+/* ---------- parsing ---------- */
+function parseRows(rows){
+  const cell=c=>c==null?'':String(c).replace(/\u00a0/g,' ').trim();
+  const maxRe=/\(\s*(\d+(?:\.\d+)?)\s*\)\s*$/;
+  let hi=-1;
+  for(let i=0;i<Math.min(rows.length,25);i++){
+    const r=(rows[i]||[]).map(cell);
+    if(r.some(c=>/^(student\s*)?name$/i.test(c))&&r.some(c=>maxRe.test(c))){hi=i;break;}
+  }
+  if(hi<0)throw new Error('Could not find the header row. The sheet needs a Name column and one column per test with the maximum marks in brackets, such as “Test-01 (20)”.');
+  const head=rows[hi].map(cell);
+  const find=re=>head.findIndex(h=>re.test(h));
+  const iName=find(/^(student\s*)?name$/i);
+  const iId=find(/^(member\s*id|roll\s*(no\.?|number)?|reg(istration)?\s*(no\.?|number)?|student\s*id|id)$/i);
+  const iEmail=find(/^e-?mail/i);
+  const iGroup=find(/^(group|section|class|branch|batch)$/i);
+  const known=new Set([iName,iId,iEmail,iGroup].filter(i=>i>=0));
+  const tests=[];
+  head.forEach((h,i)=>{
+    if(known.has(i)||!maxRe.test(h))return;
+    const max=parseFloat(h.match(maxRe)[1]);
+    if(!(max>0))return;
+    const m=h.match(/^(\d+)\s*-\s*(.*?)\s*(?:\[([^\]]*)\])?\s*\(\s*[\d.]+\s*\)\s*$/);
+    const full=(m?m[2]:h.replace(maxRe,'')).trim();
+    const tm=full.match(/test[\s\-_]*0*(\d+)/i);
+    const short=full.replace(/^\d{4}\s*-\s*\d{4}\s*-?\s*/,'');
+    tests.push({col:i,index:tests.length,max,full,mode:m&&m[3]?m[3].trim():'',
+      label:tm?('Test '+tm[1].padStart(2,'0')):(short.length>18?short.slice(0,18):short)||('Test '+(tests.length+1))});
+  });
+  if(!tests.length)throw new Error('No test columns were found. Each test column heading must end with its maximum marks in brackets, such as “(20)”.');
+  const seen={};
+  tests.forEach(t=>{seen[t.label]=(seen[t.label]||0)+1;});
+  tests.forEach(t=>{if(seen[t.label]>1)t.label=t.full.length>22?t.full.slice(-22):t.full;});
+
+  const batchRe=/^(\d{4})\s*-\s*(\d{4})\s*-?\s*/;
+  const cleanGroup=g=>g.replace(batchRe,'').replace(/\s*-\s*Training$/i,'').trim()||g;
+  const students=[];
+  let batch='';
+  for(let r=hi+1;r<rows.length;r++){
+    const row=rows[r]||[];
+    const name=cell(row[iName]);
+    const idv=iId>=0?cell(row[iId]):'';
+    if(!name||/generated\s+by/i.test(name)||/generated\s+by/i.test(idv))continue;
+    const gRaw=iGroup>=0?cell(row[iGroup]):'';
+    if(!batch){const bm=gRaw.match(batchRe);if(bm)batch=bm[1]+'\u2013'+bm[2];}
+    students.push({id:idv,name,group:gRaw?cleanGroup(gRaw):'All students',scores:tests.map(t=>toNum(row[t.col]))});
+  }
+  if(!students.length)throw new Error('No student rows were found under the header row.');
+  const f0=tests[0].full;
+  const bm0=f0.match(batchRe);
+  if(!batch&&bm0)batch=bm0[1]+'\u2013'+bm0[2];
+  let program=f0.replace(/[-\s_]*test[\s\-_]*\d+.*$/i,'').replace(batchRe,'').replace(/^[-\s]+|[-\s]+$/g,'');
+  program=program.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[-_]+/g,' ').trim();
+  const groups=[...new Set(students.map(s=>s.group))].sort(natural);
+  return {students,tests,groups,meta:{batch,program,rowsRead:students.length}};
+}
+
+/* ---------- analysis ---------- */
+function analyze(ds,opts){
+  const pass=opts.pass/100;
+  const S=ds.students.filter(s=>opts.group==='all'||s.group===opts.group);
+  const N=S.length,T=ds.tests.length;
+  const okPass=p=>p+1e-9>=pass;
+  const tests=ds.tests.map((t,ti)=>{
+    const vals=S.map(s=>s.scores[ti]).filter(v=>v!=null);
+    const pcts=vals.map(v=>v/t.max);
+    const bands=Object.fromEntries(BANDS.map(b=>[b.key,0]));
+    pcts.forEach(p=>{bands[bandOf(p).key]++;});
+    return {label:t.label,full:t.full,max:t.max,index:ti,
+      appeared:vals.length,absent:N-vals.length,part:N?vals.length/N:0,
+      avg:mean(vals),avgPct:vals.length?mean(vals)/t.max:null,median:median(vals),
+      high:vals.length?Math.max(...vals):null,low:vals.length?Math.min(...vals):null,
+      passN:pcts.filter(okPass).length,passPct:vals.length?pcts.filter(okPass).length/vals.length:null,
+      perfect:vals.filter(v=>v>=t.max).length,bands};
+  });
+  const maxAll=ds.tests.reduce((a,t)=>a+t.max,0);
+  const rows=S.map(s=>{
+    let total=0,att=0;const pcts=[];
+    s.scores.forEach((v,i)=>{if(v!=null){total+=v;att++;pcts.push(v/ds.tests[i].max);}});
+    const avgPct=att?mean(pcts):null;
+    const first=att?pcts[0]:null,last=att?pcts[att-1]:null;
+    return {id:s.id,name:s.name,group:s.group,scores:s.scores,att,total,maxAll,
+      overallPct:maxAll?total/maxAll:0,avgPct,first,last,delta:att>=2?last-first:null,
+      never:att===0,lowScore:att>0&&!okPass(avgPct),lowAtt:att>0&&att<T/2,
+      key:opts.absentZero?(maxAll?total/maxAll:0):(avgPct==null?-1:avgPct)};
+  });
+  const sorted=[...rows].sort((a,b)=>(b.key-a.key)||(b.att-a.att)||natural(a.name,b.name));
+  sorted.forEach((r,i)=>{
+    const p=sorted[i-1];
+    r.rank=(p&&Math.abs(p.key-r.key)<1e-9&&p.att===r.att)?p.rank:i+1;
+    r.band=r.avgPct==null?null:bandOf(r.avgPct).key;
+  });
+  const gnames=[...new Set(S.map(s=>s.group))].sort(natural);
+  const groups=gnames.map(g=>{
+    const gs=S.filter(s=>s.group===g);
+    const perTest=ds.tests.map((t,ti)=>{
+      const vals=gs.map(s=>s.scores[ti]).filter(v=>v!=null);
+      return {appeared:vals.length,part:gs.length?vals.length/gs.length:0,
+        avgPct:vals.length?mean(vals)/t.max:null,
+        passPct:vals.length?vals.filter(v=>okPass(v/t.max)).length/vals.length:null};
+    });
+    const all=[];
+    gs.forEach(s=>s.scores.forEach((v,i)=>{if(v!=null)all.push(v/ds.tests[i].max);}));
+    const grows=sorted.filter(r=>r.group===g);
+    return {name:g,n:gs.length,perTest,part:gs.length&&T?all.length/(gs.length*T):0,
+      avgPct:mean(all),passPct:all.length?all.filter(okPass).length/all.length:null,
+      allAttended:grows.filter(r=>r.att===T).length,atRisk:grows.filter(r=>r.lowScore||r.never).length};
+  });
+  const allP=[];
+  S.forEach(s=>s.scores.forEach((v,i)=>{if(v!=null)allP.push(v/ds.tests[i].max);}));
+  const kpi={N,T,attempts:allP.length,possible:N*T,participation:N&&T?allP.length/(N*T):0,
+    avgPct:mean(allP),passPct:allP.length?allP.filter(okPass).length/allP.length:null,
+    allAttended:rows.filter(r=>r.att===T).length,never:rows.filter(r=>r.never).length,
+    atRisk:rows.filter(r=>r.lowScore).length,lowAtt:rows.filter(r=>r.lowAtt&&!r.never).length,
+    excellent:rows.filter(r=>r.avgPct!=null&&r.avgPct>=0.8).length};
+  const attendance=Array.from({length:T+1},(_,k)=>rows.filter(r=>r.att===k).length);
+  const top=sorted.filter(r=>r.att>0).slice(0,10);
+  const attention=sorted.filter(r=>r.never||r.lowScore||r.lowAtt)
+    .sort((a,b)=>(a.never!==b.never?(a.never?-1:1):0)||((a.avgPct??-1)-(b.avgPct??-1))||natural(a.name,b.name));
+  const withDelta=rows.filter(r=>r.delta!=null);
+  const improved=[...withDelta].filter(r=>r.delta>=0.05).sort((a,b)=>b.delta-a.delta).slice(0,5);
+  const declined=[...withDelta].filter(r=>r.delta<=-0.05).sort((a,b)=>a.delta-b.delta).slice(0,5);
+  const A={opts,pass:opts.pass,N,T,tests,rows:sorted,groups,kpi,attendance,top,attention,improved,declined,maxAll,
+    multiGroup:groups.length>1};
+  const ins=buildInsights(A);
+  A.insights=ins.insights;A.followups=ins.followups;
+  return A;
+}
+
+function buildInsights(A){
+  const I=[],F=[],K=A.kpi,ts=A.tests,P=v=>Math.round(v*100)+'%';
+  if(!K.attempts){
+    return {insights:[{tone:'warn',text:'No test attempts were found for the selected students, so scores cannot be analysed.'}],followups:[]};
+  }
+  I.push({tone:'info',text:`${pl(K.N,'student')} ${K.N===1?'was':'were'} scheduled for ${pl(K.T,'test')}. ${P(K.participation)} of expected attempts were made and the average score on attempted tests was ${P(K.avgPct)}.`});
+  if(ts.length>1){
+    const f=ts[0],l=ts[ts.length-1],d=l.part-f.part;
+    if(Math.abs(d)>=0.05)I.push({tone:d<0?'warn':'good',text:`Participation ${d<0?'dropped':'improved'} from ${P(f.part)} in ${f.label} to ${P(l.part)} in ${l.label}.`});
+    const lp=[...ts].sort((a,b)=>a.part-b.part)[0];
+    if(lp.part<0.9)I.push({tone:'warn',text:`${lp.label} had the lowest turnout: ${pl(lp.absent,'student')} (${P(1-lp.part)}) did not appear.`});
+    if(d<=-0.05)F.push(`Confirm test dates and send reminders before the next test, as participation has fallen since ${f.label}.`);
+  }
+  const sc=ts.filter(t=>t.avgPct!=null);
+  if(sc.length>1){
+    const hi=[...sc].sort((a,b)=>b.avgPct-a.avgPct)[0],lo=[...sc].sort((a,b)=>a.avgPct-b.avgPct)[0];
+    if(hi!==lo)I.push({tone:'info',text:`Average scores ranged from ${P(lo.avgPct)} in ${lo.label} to ${P(hi.avgPct)} in ${hi.label}.`});
+    const d=sc[sc.length-1].avgPct-sc[0].avgPct;
+    if(Math.abs(d)>=0.05)I.push({tone:d>0?'good':'warn',text:`Average score ${d>0?'rose':'fell'} by ${Math.round(Math.abs(d)*100)} percentage points between ${sc[0].label} and ${sc[sc.length-1].label}.`});
+  }
+  if(A.multiGroup){
+    const g=[...A.groups].filter(x=>x.avgPct!=null).sort((a,b)=>b.avgPct-a.avgPct);
+    if(g.length>1){
+      const best=g[0],worst=g[g.length-1],gap=Math.round((best.avgPct-worst.avgPct)*100);
+      I.push({tone:'info',text:`${best.name} leads on average score (${P(best.avgPct)}) and ${worst.name} is lowest (${P(worst.avgPct)}), a gap of ${pl(gap,'point')}.`});
+      if(gap>=5)F.push(`Give ${worst.name} extra revision support; it trails the strongest section by ${pl(gap,'point')}.`);
+    }
+    const gp=[...A.groups].sort((a,b)=>a.part-b.part)[0];
+    if(gp.part<0.85)I.push({tone:'warn',text:`${gp.name} has the lowest participation at ${P(gp.part)} of expected attempts.`});
+  }
+  if(K.excellent)I.push({tone:'good',text:`${pl(K.excellent,'student')} (${P(K.excellent/K.N)}) averaged 80% or more on the tests they attempted.`});
+  if(K.allAttended)I.push({tone:'info',text:`${pl(K.allAttended,'student')} (${P(K.allAttended/K.N)}) attempted every test.`});
+  if(K.atRisk){
+    I.push({tone:'warn',text:`${pl(K.atRisk,'student')} averaged below the ${A.pass}% pass mark on the tests they attempted.`});
+    F.push(`Arrange remedial sessions for the ${pl(K.atRisk,'student')} averaging below ${A.pass}%.`);
+  }
+  if(K.never){
+    I.push({tone:'warn',text:`${pl(K.never,'student')} did not attempt any test.`});
+    F.push(`Contact the ${pl(K.never,'student')} who have not attempted any test to find out what is blocking them.`);
+  }
+  if(K.lowAtt)F.push(`Encourage regular attendance for ${pl(K.lowAtt,'student')} who attempted fewer than half of the tests.`);
+  return {insights:I,followups:F};
+}
+
+function summarySheets(A){
+  const tests=[['Test','Max marks','Students','Appeared','Absent','Participation %','Average marks','Average %','Median','Highest','Lowest','Pass rate % (of appeared)','Full marks scored']];
+  A.tests.forEach(t=>tests.push([t.label,t.max,A.N,t.appeared,t.absent,Math.round(t.part*1000)/10,t.avg==null?'':Math.round(t.avg*100)/100,t.avgPct==null?'':Math.round(t.avgPct*1000)/10,t.median==null?'':t.median,t.high==null?'':t.high,t.low==null?'':t.low,t.passPct==null?'':Math.round(t.passPct*1000)/10,t.perfect]));
+  const secs=[['Section','Students','Participation %','Average %','Pass rate %','Attempted all tests','Below pass mark or no attempts',...A.tests.map(t=>t.label+' avg %'),...A.tests.map(t=>t.label+' participation %')]];
+  A.groups.forEach(g=>secs.push([g.name,g.n,Math.round(g.part*1000)/10,g.avgPct==null?'':Math.round(g.avgPct*1000)/10,g.passPct==null?'':Math.round(g.passPct*1000)/10,g.allAttended,g.atRisk,...g.perTest.map(x=>x.avgPct==null?'':Math.round(x.avgPct*1000)/10),...g.perTest.map(x=>Math.round(x.part*1000)/10)]));
+  const stu=[['Rank','Member Id','Name','Section',...A.tests.map(t=>t.label+' (/'+t.max+')'),'Tests attempted','Total marks','Out of','Average % (attempted)','Overall %','Status']];
+  A.rows.forEach(r=>stu.push([r.rank,r.id,r.name,r.group,...r.scores.map(v=>v==null?'Absent':v),r.att,r.total,r.maxAll,r.avgPct==null?'':Math.round(r.avgPct*1000)/10,Math.round(r.overallPct*1000)/10,statusText(r)]));
+  return [{name:'Test summary',rows:tests},{name:'Section summary',rows:secs},{name:'Student results',rows:stu}];
+}
+function statusText(r){
+  const s=[];
+  if(r.never)s.push('No attempts');else{if(r.lowScore)s.push('Below pass mark');if(r.lowAtt)s.push('Low attendance');}
+  return s.join(', ');
+}
+
+/* ---------- PDF ---------- */
+function buildPdf(jsPDF,A,cfg,img){
+  const doc=new jsPDF({unit:'mm',format:'a4',compress:true});
+  const W=210,H=297,M=14,CW=182,TOP=24,BOT=281,MM=0.3528;
+  const INK=[21,27,43],MUTED=[91,100,120],RULE=[217,221,230],PRI=[38,48,122],HEAD=[236,238,246];
+  const TINT={ex:[213,235,223],good:[230,241,217],avg:[251,239,203],low:[247,213,206]};
+  const DOT={good:[30,127,92],warn:[216,69,46],info:PRI};
+  const T=s=>String(s==null?'':s).replace(/[\u2013\u2014\u2212]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/\u2026/g,'..').replace(/\u00a0/g,' ').replace(/[^\x20-\x7E\u00A1-\u00FF]/g,'');
+  const K=A.kpi;
+  let y=0;
+  const tc=c=>doc.setTextColor(c[0],c[1],c[2]);
+  const fc=c=>doc.setFillColor(c[0],c[1],c[2]);
+  const dc=c=>doc.setDrawColor(c[0],c[1],c[2]);
+  const font=(f,s,z)=>{doc.setFont(f,s);doc.setFontSize(z);};
+  const runHead=()=>{
+    font('helvetica','normal',8);tc(MUTED);
+    doc.text(T(cfg.title),M,11,{maxWidth:CW*0.62});
+    if(cfg.institution)doc.text(T(cfg.institution),W-M,11,{align:'right',maxWidth:CW*0.35});
+    dc(RULE);doc.setLineWidth(0.2);doc.line(M,14.5,W-M,14.5);
+  };
+  const newPage=()=>{doc.addPage();y=TOP;runHead();};
+  const ensure=h=>{if(y+h>BOT){newPage();return true;}return false;};
+  const h2=(txt,note)=>{
+    ensure(note?30:22);
+    dc(INK);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);
+    font('times','bold',14);tc(INK);doc.text(T(txt),M,y+7.2);y+=11;
+    if(note){font('helvetica','normal',8.6);tc(MUTED);const ls=doc.splitTextToSize(T(note),CW);doc.text(ls,M,y+2.2,{lineHeightFactor:1.35});y+=ls.length*8.6*MM*1.35+2.5;}
+    else y+=2;
+  };
+  const h3=txt=>{ensure(20);font('times','bold',11.5);tc(INK);doc.text(T(txt),M,y+4);y+=7.5;};
+  const bullets=items=>{
+    items.forEach(it=>{
+      font('helvetica','normal',9.5);
+      const ls=doc.splitTextToSize(T(it.text),CW-7),lh=9.5*MM*1.4;
+      ensure(ls.length*lh+2.4);
+      fc(DOT[it.tone]||PRI);doc.circle(M+1.4,y+2.4,1.05,'F');
+      tc(INK);doc.text(ls,M+6,y+3.2,{lineHeightFactor:1.4});
+      y+=ls.length*lh+2.2;
+    });
+  };
+  const fit=(s,w)=>{s=T(s);if(doc.getTextWidth(s)<=w)return s;while(s.length>1&&doc.getTextWidth(s+'..')>w)s=s.slice(0,-1);return s+'..';};
+  const table=o=>{
+    const fs=o.fs||8.6,rh=o.rh||6.2,cols=o.cols;
+    const head=()=>{
+      fc(HEAD);doc.rect(M,y,CW,rh+0.8,'F');font('helvetica','bold',fs);tc(INK);
+      let x=M;cols.forEach(c=>{
+        const al=c.a||'l',tx=al==='r'?x+c.w-1.8:al==='c'?x+c.w/2:x+1.8;
+        doc.text(fit(c.h,c.w-3.4),tx,y+rh-1.7,{align:al==='r'?'right':al==='c'?'center':'left'});x+=c.w;
+      });
+      dc(INK);doc.setLineWidth(0.3);doc.line(M,y+rh+0.8,W-M,y+rh+0.8);y+=rh+0.8;
+    };
+    ensure(rh*3+4);head();
+    o.rows.forEach(r=>{
+      if(y+rh>BOT){newPage();head();}
+      let x=M;
+      cols.forEach((c,ci)=>{
+        const f=o.fill?o.fill(r,ci):null;
+        if(f){fc(f);doc.rect(x,y,c.w,rh,'F');}
+        x+=c.w;
+      });
+      x=M;
+      cols.forEach((c,ci)=>{
+        const st=o.style?o.style(r,ci):null;
+        font('helvetica',st&&st.bold?'bold':'normal',fs);tc(st&&st.color?st.color:INK);
+        const al=c.a||'l',tx=al==='r'?x+c.w-1.8:al==='c'?x+c.w/2:x+1.8;
+        doc.text(fit(c.v(r),c.w-3.4),tx,y+rh-1.75,{align:al==='r'?'right':al==='c'?'center':'left'});x+=c.w;
+      });
+      dc(RULE);doc.setLineWidth(0.15);doc.line(M,y+rh,W-M,y+rh);y+=rh;
+    });
+    y+=3;
+  };
+  const image=(url,ratio,maxW)=>{
+    if(!url)return;
+    const w=Math.min(CW,maxW||CW),h=w*ratio;
+    ensure(h+2);doc.addImage(url,'PNG',M,y,w,h,undefined,'FAST');y+=h+4;
+  };
+  const who=r=>cfg.names?r.name:(r.id||('Rank '+r.rank));
+  const bandFill=p=>p==null?null:TINT[bandOf(p).key];
+
+  /* cover */
+  font('times','bold',23);
+  const tlines=doc.splitTextToSize(T(cfg.title),CW).slice(0,2);
+  const bandH=(cfg.institution?22:16)+tlines.length*10.5+16;
+  fc(PRI);doc.rect(0,0,W,bandH,'F');
+  let by=14;
+  if(cfg.institution){font('helvetica','bold',11);tc([255,255,255]);doc.text(T(cfg.institution),M,by,{maxWidth:CW*0.66});by+=9;}
+  font('times','bold',23);tc([255,255,255]);doc.text(tlines,M,by+4,{lineHeightFactor:1.15});
+  by+=4+(tlines.length-1)*10.5+8;
+  font('helvetica','normal',9.5);tc([214,219,246]);
+  const bits=[cfg.batch?('Batch '+cfg.batch):'',cfg.scope,pl(K.T,'test'),pl(K.N,'student')].filter(Boolean);
+  doc.text(T(bits.join('   |   ')),M,by);
+  font('helvetica','normal',8.5);tc([214,219,246]);
+  doc.text(T('Generated '+cfg.date),W-M,10,{align:'right'});
+  y=bandH+9;
+
+  /* KPIs */
+  const kp=[
+    [String(K.N),'Students'],
+    [pc(K.participation),'Participation'],
+    [pc(K.avgPct),'Average score'],
+    [pc(K.passPct),'Pass rate ('+A.pass+'% or more)'],
+    [K.allAttended+'/'+K.N,'Attempted every test']
+  ];
+  const kw=CW/5;
+  fc([244,245,248]);doc.rect(M,y,CW,26,'F');
+  dc(INK);doc.setLineWidth(0.6);doc.line(M,y,W-M,y);
+  kp.forEach((k,i)=>{
+    const x=M+i*kw;
+    if(i){dc(RULE);doc.setLineWidth(0.2);doc.line(x,y+4,x,y+23);}
+    font('times','bold',19);tc(PRI);doc.text(T(k[0]),x+4,y+12);
+    font('helvetica','normal',7.8);tc(MUTED);doc.text(doc.splitTextToSize(T(k[1]),kw-6),x+4,y+17.5,{lineHeightFactor:1.25});
+  });
+  y+=34;
+
+  h2('Key observations');
+  bullets(A.insights);
+  if(A.followups.length){y+=3;h3('Suggested follow-up');bullets(A.followups.map(t=>({tone:'info',text:t})));}
+  y+=4;
+
+  /* tests */
+  h2('Test-wise performance','Average score is calculated on students who appeared. Participation is the share of students who appeared. Figures in brackets are maximum marks.');
+  image(img.trend,0.38);
+  table({cols:[
+    {h:'Test',w:24,v:t=>t.label+' ('+t.max+')'},
+    {h:'Appeared',w:18,a:'r',v:t=>String(t.appeared)},
+    {h:'Absent',w:16,a:'r',v:t=>String(t.absent)},
+    {h:'Participation',w:25,a:'r',v:t=>pc(t.part)},
+    {h:'Avg marks',w:19,a:'r',v:t=>m1(t.avg)},
+    {h:'Avg %',w:15,a:'r',v:t=>pc(t.avgPct)},
+    {h:'Median',w:16,a:'r',v:t=>n1(t.median)},
+    {h:'Highest',w:16,a:'r',v:t=>n1(t.high)},
+    {h:'Lowest',w:16,a:'r',v:t=>n1(t.low)},
+    {h:'Pass rate',w:17,a:'r',v:t=>pc(t.passPct)}
+  ],rows:A.tests,fill:(t,ci)=>ci===5&&t.avgPct!=null?TINT[bandOf(t.avgPct).key]:null});
+  h3('Score distribution by test');
+  font('helvetica','normal',8.6);tc(MUTED);
+  doc.text(T('Number of students who appeared, grouped by the percentage they scored.'),M,y+1.5);y+=5;
+  image(img.bands,0.38);
+
+  /* sections */
+  if(A.multiGroup){
+    h2('Section-wise comparison','Sections are the groups in the uploaded sheet. Cell colours follow the score bands: green 80% and above, light green 60 to 79%, amber 40 to 59%, red below 40%.');
+    image(img.groups,0.4);
+    table({cols:[
+      {h:'Section',w:38,v:g=>g.name},
+      {h:'Students',w:22,a:'r',v:g=>String(g.n)},
+      {h:'Participation',w:26,a:'r',v:g=>pc(g.part)},
+      {h:'Avg score',w:22,a:'r',v:g=>pc(g.avgPct)},
+      {h:'Pass rate',w:22,a:'r',v:g=>pc(g.passPct)},
+      {h:'Attempted all',w:26,a:'r',v:g=>String(g.allAttended)},
+      {h:'At risk',w:26,a:'r',v:g=>String(g.atRisk)}
+    ],rows:A.groups,fill:(g,ci)=>ci===3&&g.avgPct!=null?TINT[bandOf(g.avgPct).key]:null});
+    const tw=Math.floor((CW-38)/A.T*10)/10;
+    const mcols=fn=>[{h:'Section',w:CW-tw*A.T,v:g=>g.name},...A.tests.map((t,i)=>({h:t.label,w:tw,a:'r',v:g=>fn(g.perTest[i])}))];
+    h3('Average score by test and section');
+    table({cols:mcols(x=>pc(x.avgPct)),rows:A.groups,fill:(g,ci)=>ci>0?bandFill(g.perTest[ci-1].avgPct):null});
+    h3('Participation by test and section');
+    table({cols:mcols(x=>pc(x.part)),rows:A.groups,fill:(g,ci)=>ci>0?bandFill(g.perTest[ci-1].part):null});
+  }
+
+  /* students */
+  h2('Student performance','Ranking uses '+(A.opts.absentZero?'total marks across all tests, with absence counted as zero.':'the average percentage on tests attempted.')+' Average % is calculated on attempted tests only.');
+  h3('Tests attempted per student');
+  image(img.attendance,0.3,CW);
+  h3('Top performers');
+  table({cols:[
+    {h:'Rank',w:14,v:r=>String(r.rank)},
+    {h:cfg.names?'Name':'Member Id',w:70,v:who},
+    {h:'Section',w:26,v:r=>r.group},
+    {h:'Attempted',w:24,a:'r',v:r=>r.att+'/'+A.T},
+    {h:'Marks',w:24,a:'r',v:r=>n1(r.total)+'/'+r.maxAll},
+    {h:'Avg %',w:24,a:'r',v:r=>pc(r.avgPct)}
+  ],rows:A.top,fill:(r,ci)=>ci===5?bandFill(r.avgPct):null});
+  h3('Students needing attention');
+  if(!A.attention.length){font('helvetica','normal',9.5);tc(MUTED);doc.text('No students fall below the pass mark or attempted fewer than half of the tests.',M,y+3);y+=9;}
+  else{
+    const cap=20,list=A.attention.slice(0,cap);
+    table({cols:[
+      {h:cfg.names?'Name':'Member Id',w:62,v:who},
+      {h:'Section',w:24,v:r=>r.group},
+      {h:'Attempted',w:22,a:'r',v:r=>r.att+'/'+A.T},
+      {h:'Avg %',w:20,a:'r',v:r=>pc(r.avgPct)},
+      {h:'Reason',w:54,v:statusText}
+    ],rows:list,fill:(r,ci)=>ci===3?bandFill(r.avgPct):null});
+    if(A.attention.length>cap){font('helvetica','normal',8.6);tc(MUTED);
+      doc.text(T((A.attention.length-cap)+' more students are flagged'+(cfg.annexure?' in the student-wise results.':' in the Excel summary.')),M,y+1);y+=6;}
+  }
+  if(A.improved.length||A.declined.length){
+    const mv=(title,list)=>{
+      if(!list.length)return;
+      h3(title);
+      table({cols:[
+        {h:cfg.names?'Name':'Member Id',w:70,v:who},
+        {h:'Section',w:30,v:r=>r.group},
+        {h:'First test',w:26,a:'r',v:r=>pc(r.first)},
+        {h:'Latest test',w:28,a:'r',v:r=>pc(r.last)},
+        {h:'Change',w:28,a:'r',v:r=>(r.delta>0?'+':'')+Math.round(r.delta*100)+' pts'}
+      ],rows:list});
+    };
+    mv('Biggest improvement (first to latest attempted test)',A.improved);
+    mv('Biggest decline (first to latest attempted test)',A.declined);
+  }
+
+  /* annexure */
+  if(cfg.annexure){
+    newPage();
+    h2('Student-wise results','Ranked '+(A.opts.absentZero?'by total marks (absence counted as zero).':'by average % on attempted tests.')+' Abs means the student did not appear. Cell colours follow the score bands.');
+    const tw=Math.max(9,Math.min(15,Math.floor(72/A.T*10)/10));
+    const cols=[
+      {h:'Rank',w:10,v:r=>String(r.rank)},
+      {h:'Name',w:40,v:r=>r.name},
+      {h:'Section',w:20,v:r=>r.group},
+      ...A.tests.map((t,i)=>({h:t.label.replace('Test ','T'),w:tw,a:'c',v:r=>r.scores[i]==null?'Abs':String(r.scores[i])})),
+      {h:'Att.',w:13,a:'c',v:r=>r.att+'/'+A.T},
+      {h:'Avg %',w:15,a:'r',v:r=>pc(r.avgPct)}
+    ];
+    const tot=cols.reduce((a,c)=>a+c.w,0);cols[1].w+=CW-tot;
+    table({cols,rows:A.rows,fs:7.6,rh:5.3,
+      fill:(r,ci)=>{if(ci>=3&&ci<3+A.T){const v=r.scores[ci-3];return v==null?null:bandFill(v/A.tests[ci-3].max);}if(ci===cols.length-1)return bandFill(r.avgPct);return null;},
+      style:(r,ci)=>ci>=3&&ci<3+A.T&&r.scores[ci-3]==null?{color:MUTED}:null});
+  }
+
+  /* notes */
+  ensure(60);
+  h2('About these figures');
+  bullets([
+    {tone:'info',text:'Participation is the number of students who appeared divided by the number of students in scope. Students marked Absent or with an empty cell are counted as not appeared.'},
+    {tone:'info',text:'Average score, median, highest and lowest are calculated only on students who appeared. The pass rate is the share of those students who scored '+A.pass+'% or more.'},
+    {tone:'info',text:'Score bands: 80% and above, 60% to 79%, 40% to 59%, and below 40%. A student is listed as needing attention when their average on attempted tests is below the pass mark, when they attempted fewer than half of the tests, or when they attempted none.'},
+    {tone:'info',text:'Observations and follow-up points are generated automatically from the numbers in this report and should be reviewed before action is taken.'}
+  ]);
+
+  /* footers */
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){
+    doc.setPage(i);
+    dc(RULE);doc.setLineWidth(0.2);doc.line(M,H-14,W-M,H-14);
+    font('helvetica','normal',8);tc(MUTED);
+    doc.text(T(cfg.preparedBy?('Prepared by '+cfg.preparedBy):'Confidential - for internal review'),M,H-9.5,{maxWidth:CW*0.7});
+    doc.text('Page '+i+' of '+n,W-M,H-9.5,{align:'right'});
+  }
+  return doc;
+}
+/*CORE_END*/
+
+/* ================= UI ================= */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const state={ds:null,fileName:'',opts:{group:'all',pass:50,absentZero:true},
+  cfg:{title:'',institution:'',preparedBy:'',annexure:true,names:true},A:null,charts:[],
+  limit:25,sort:{key:'rank',dir:1},q:''};
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true;},4200);}
+
+/* ---------- file loading ---------- */
+function showError(msg){const e=$('#err');e.textContent=msg;e.hidden=false;}
+function pickFile(){$('#file').value='';$('#file').click();}
+async function loadFile(file){
+  $('#err').hidden=true;
+  if(!file)return;
+  if(typeof XLSX==='undefined'){showError('The spreadsheet reader did not load. Check your connection and reload the page.');return;}
+  try{
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    let ds=null,lastErr=null;
+    for(const name of wb.SheetNames){
+      try{
+        const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null,blankrows:false});
+        ds=parseRows(rows);break;
+      }catch(e){lastErr=e;}
+    }
+    if(!ds)throw lastErr||new Error('The file has no readable sheets.');
+    start(ds,file.name);
+  }catch(e){
+    console.error(e);
+    showError(e&&e.message?e.message:'That file could not be read. Upload an .xlsx, .xls or .csv file exported from your test platform.');
+    if(state.ds)toast('That file could not be read. Showing the previous report.');
+  }
+}
+function start(ds,name){
+  state.ds=ds;state.fileName=name;
+  state.opts={group:'all',pass:50,absentZero:true};
+  state.limit=25;state.sort={key:'rank',dir:1};state.q='';
+  state.cfg.title=(ds.meta.program?ds.meta.program+' ':'')+'Test Analysis Report';
+  state.cfg.batch=ds.meta.batch;
+  $('#intro').hidden=true;$('#app').hidden=false;$('#jump').hidden=false;$('#replaceTop').hidden=false;
+  $('#fileName').textContent=name;
+  $('#fileMeta').textContent=`${pl(ds.students.length,'student')}, ${pl(ds.tests.length,'test')}, ${pl(ds.groups.length,'section')}`;
+  $('#fTitle').value=state.cfg.title;
+  $('#fPass').value=50;$('#passOut').textContent='50%';$('#fZero').checked=true;
+  const sel=$('#fGroup');
+  sel.innerHTML='<option value="all">All sections</option>'+ds.groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+  sel.value='all';
+  sel.disabled=ds.groups.length<2;
+  window.scrollTo({top:0});
+  refresh();
+}
+
+/* ---------- palettes ---------- */
+const PDF_PAL={dark:false,ink:'#151B2B',muted:'#5B6478',rule:'#D9DDE6',c:['#26307A','#1F8A8A','#D9A21B','#D8452E','#8A4F9E','#6B7A90'],
+  b:{ex:'#1E7F5C',good:'#8CC084',avg:'#E0A526',low:'#D8452E'},font:'Helvetica, Arial, sans-serif'};
+function screenPal(){
+  const s=getComputedStyle(document.documentElement),g=n=>s.getPropertyValue(n).trim();
+  const dark=s.colorScheme.includes('dark')&&!s.colorScheme.includes('light dark');
+  return {dark,ink:g('--ink'),muted:g('--muted'),rule:g('--rule'),c:[1,2,3,4,5,6].map(i=>g('--c'+i)),
+    b:{ex:g('--b-ex'),good:g('--b-good'),avg:g('--b-avg'),low:g('--b-low')},
+    font:"'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif"};
+}
+
+/* ---------- charts ---------- */
+const valueLabels={id:'valueLabels',afterDatasetsDraw(chart){
+  const o=chart.options.plugins.valueLabels||{},fs=o.size||11,ctx=chart.ctx;
+  chart.data.datasets.forEach((ds,i)=>{
+    if(!ds.showValues||!chart.isDatasetVisible(i))return;
+    chart.getDatasetMeta(i).data.forEach((el,j)=>{
+      const v=ds.data[j];if(v==null||!el)return;
+      const txt=ds.labelFmt?ds.labelFmt(v):String(v);
+      ctx.save();ctx.font=`600 ${fs}px ${o.font||'sans-serif'}`;ctx.textAlign='center';
+      const h=Math.abs((el.base??el.y)-el.y);
+      if(ds.showValues==='inside'){
+        if(!v||h<fs+4){ctx.restore();return;}
+        ctx.fillStyle=ds.labelColor||'#fff';ctx.textBaseline='middle';ctx.fillText(txt,el.x,(el.y+el.base)/2);
+      }else if(ds.showValues==='insideTop'){
+        if(h<fs+8){ctx.restore();return;}
+        ctx.fillStyle=ds.labelColor||'#fff';ctx.textBaseline='top';ctx.fillText(txt,el.x,el.y+5);
+      }else{
+        ctx.fillStyle=ds.labelColor||o.color||'#333';ctx.textBaseline='bottom';ctx.fillText(txt,el.x,el.y-6);
+      }
+      ctx.restore();
+    });
+  });
+}};
+const whiteBg={id:'whiteBg',beforeDraw(c){if(!c.options.plugins.whiteBg)return;c.ctx.save();c.ctx.fillStyle='#fff';c.ctx.fillRect(0,0,c.width,c.height);c.ctx.restore();}};
+if(typeof Chart!=='undefined')Chart.register(valueLabels,whiteBg);
+
+function merge(t,s){
+  for(const k in s){
+    const v=s[k];
+    if(v&&typeof v==='object'&&!Array.isArray(v))t[k]=merge(t[k]&&typeof t[k]==='object'?t[k]:{},v);
+    else t[k]=v;
+  }
+  return t;
+}
+function baseOpts(pal,pdf,extra={}){
+  const fs=pdf?13:12;
+  const o={responsive:!pdf,maintainAspectRatio:false,animation:false,layout:{padding:{top:18}},
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom',labels:{color:pal.ink,font:{family:pal.font,size:fs},boxWidth:12,boxHeight:12,padding:14}},
+      valueLabels:{size:pdf?12:11,font:pal.font,color:pal.ink},whiteBg:pdf?{}:false},
+    scales:{
+      x:{grid:{display:false},border:{color:pal.rule},ticks:{color:pal.muted,font:{family:pal.font,size:fs}}},
+      y:{min:0,max:100,border:{display:false},grid:{color:pal.rule},ticks:{color:pal.muted,font:{family:pal.font,size:fs},stepSize:25,callback:v=>v+'%'}}
+    }};
+  if(pdf)o.devicePixelRatio=2;
+  if(extra.plugins)Object.assign(o.plugins,extra.plugins);
+  if(extra.scales)for(const k in extra.scales)merge(o.scales[k],extra.scales[k]);
+  return o;
+}
+const pctFmt=v=>v+'%';
+function cfgTrend(A,pal,pdf){
+  return {type:'bar',data:{labels:A.tests.map(t=>t.label),datasets:[
+    {type:'bar',label:'Average score',data:A.tests.map(t=>t.avgPct==null?null:Math.round(t.avgPct*100)),backgroundColor:pal.c[0],borderRadius:2,maxBarThickness:70,showValues:'insideTop',labelColor:pal.dark?'#10142B':'#fff',labelFmt:pctFmt,order:2},
+    {type:'line',label:'Participation',data:A.tests.map(t=>Math.round(t.part*100)),borderColor:pal.c[3],backgroundColor:pal.c[3],borderWidth:2.5,pointRadius:pdf?5:5,pointHoverRadius:7,tension:0,showValues:'top',labelColor:pal.c[3],labelFmt:pctFmt,order:1}
+  ]},options:baseOpts(pal,pdf)};
+}
+function cfgBands(A,pal,pdf){
+  const order=[...BANDS].reverse();
+  return {type:'bar',data:{labels:A.tests.map(t=>t.label),datasets:order.map(b=>({
+    label:b.label,data:A.tests.map(t=>t.bands[b.key]),backgroundColor:pal.b[b.key],maxBarThickness:70,
+    showValues:'inside',labelColor:(pal.dark||b.key==='good'||b.key==='avg')?'#151B2B':'#fff'}))},
+    options:baseOpts(pal,pdf,{plugins:{legend:{position:'bottom',reverse:true,labels:{color:pal.ink,font:{family:pal.font,size:pdf?13:12},boxWidth:12,boxHeight:12,padding:14}}},
+      scales:{x:{stacked:true},y:{stacked:true,min:0,max:undefined,ticks:{stepSize:undefined,callback:v=>v},title:{display:true,text:'Students who appeared',color:pal.muted,font:{family:pal.font,size:pdf?12:12}}}}})};
+}
+function cfgGroups(A,pal,pdf){
+  return {type:'bar',data:{labels:A.tests.map(t=>t.label),datasets:A.groups.map((g,i)=>({
+    label:g.name,data:g.perTest.map(x=>x.avgPct==null?null:Math.round(x.avgPct*100)),backgroundColor:pal.c[i%6],borderRadius:2,maxBarThickness:46,
+    showValues:'top',labelFmt:v=>v,labelColor:pal.ink}))},
+    options:baseOpts(pal,pdf,{plugins:{valueLabels:{size:pdf?11:10,font:pal.font,color:pal.ink}}})};
+}
+function cfgAttend(A,pal,pdf){
+  const T=A.T;
+  return {type:'bar',data:{labels:A.attendance.map((_,k)=>k===T?'All '+T:String(k)),datasets:[{
+    label:'Students',data:A.attendance,maxBarThickness:60,borderRadius:2,
+    backgroundColor:A.attendance.map((_,k)=>k===T?pal.b.ex:k===0?pal.b.low:pal.c[0]),showValues:'top',labelColor:pal.ink}]},
+    options:baseOpts(pal,pdf,{plugins:{legend:{display:false}},
+      scales:{x:{title:{display:true,text:'Tests attempted',color:pal.muted,font:{family:pal.font,size:pdf?12:12}}},
+        y:{max:undefined,ticks:{stepSize:undefined,callback:v=>v},title:{display:true,text:'Students',color:pal.muted,font:{family:pal.font,size:12}}}}})};
+}
+function drawCharts(){
+  state.charts.forEach(c=>c.destroy());state.charts=[];
+  if(typeof Chart==='undefined')return;
+  const A=state.A,pal=screenPal();
+  Chart.defaults.font.family=pal.font;
+  const add=(id,fn)=>{const cv=document.getElementById(id);if(cv)state.charts.push(new Chart(cv,fn(A,pal,false)));};
+  add('chTrend',cfgTrend);add('chBands',cfgBands);add('chGroups',cfgGroups);add('chAttend',cfgAttend);
+}
+function chartImage(fn,A,w,h){
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  $('#offscreen').appendChild(cv);
+  const cfg=fn(A,PDF_PAL,true);
+  const ch=new Chart(cv,cfg);
+  const url=cv.toDataURL('image/png');
+  ch.destroy();cv.remove();return url;
+}
+
+/* ---------- report rendering ---------- */
+function scopeLabel(){
+  const A=state.A;
+  if(state.opts.group==='all')return A.multiGroup?`All ${A.groups.length} sections`:(A.groups[0]?A.groups[0].name:'All students');
+  return 'Section '+state.opts.group;
+}
+function today(){return new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}
+function refresh(){
+  state.A=analyze(state.ds,state.opts);
+  renderReport();drawCharts();
+}
+function heat(p){return p==null?'':'h-'+bandOf(p).key;}
+function renderReport(){
+  const A=state.A,K=A.kpi,c=state.cfg;
+  $('#jumpSections').hidden=!A.multiGroup;
+  if(!K.attempts){
+    $('#report').innerHTML=`<div class="empty">No test scores were found for ${esc(scopeLabel())}. Choose another section or upload a different file.</div>`;
+    return;
+  }
+  const kpis=[[String(K.N),'','Students'],[Math.round(K.participation*100),'%','Participation'],[Math.round(K.avgPct*100),'%','Average score'],
+    [K.passPct==null?'\u2014':Math.round(K.passPct*100),K.passPct==null?'':'%','Pass rate at '+A.pass+'% or more'],[K.allAttended,'/'+K.N,'Attempted every test']];
+  const testsRows=A.tests.map(t=>`<tr><td>${esc(t.label)}<small>out of ${t.max}</small></td><td class="num">${t.appeared}</td><td class="num">${t.absent}</td><td class="num">${pc(t.part)}</td><td class="num">${m1(t.avg)}</td><td class="num ${heat(t.avgPct)}">${pc(t.avgPct)}</td><td class="num">${n1(t.median)}</td><td class="num">${n1(t.high)}</td><td class="num">${n1(t.low)}</td><td class="num">${pc(t.passPct)}</td></tr>`).join('');
+  const groupRows=A.groups.map(g=>`<tr><td>${esc(g.name)}</td><td class="num">${g.n}</td><td class="num">${pc(g.part)}</td><td class="num ${heat(g.avgPct)}">${pc(g.avgPct)}</td><td class="num">${pc(g.passPct)}</td><td class="num">${g.allAttended}</td><td class="num">${g.atRisk}</td></tr>`).join('');
+  const matrix=(fn)=>`<div class="scroll"><table class="tbl"><thead><tr><th>Section</th>${A.tests.map(t=>`<th class="num">${esc(t.label)}</th>`).join('')}</tr></thead><tbody>${A.groups.map(g=>`<tr><td>${esc(g.name)}</td>${g.perTest.map(x=>{const v=fn(x);return `<td class="num ${heat(v)}">${pc(v)}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const legend=`<div class="legend">${BANDS.map(b=>`<span><i class="h-${b.key}" style="border:1px solid var(--b-${b.key})"></i>${b.label}</span>`).join('')}</div>`;
+  const nm=r=>state.cfg.names?esc(r.name):esc(r.id||('Rank '+r.rank));
+  const topRows=A.top.map(r=>`<tr><td class="num">${r.rank}</td><td class="name">${nm(r)}</td><td>${esc(r.group)}</td><td class="num">${r.att}/${A.T}</td><td class="num">${n1(r.total)}/${r.maxAll}</td><td class="num ${heat(r.avgPct)}">${pc(r.avgPct)}</td></tr>`).join('');
+  const attRows=A.attention.slice(0,20).map(r=>`<tr><td class="name">${nm(r)}</td><td>${esc(r.group)}</td><td class="num">${r.att}/${A.T}</td><td class="num ${heat(r.avgPct)}">${pc(r.avgPct)}</td><td>${statusText(r).split(', ').filter(Boolean).map(s=>`<span class="tag warn">${esc(s)}</span>`).join('')}</td></tr>`).join('');
+  const moveRows=l=>l.map(r=>`<tr><td class="name">${nm(r)}</td><td>${esc(r.group)}</td><td class="num">${pc(r.first)}</td><td class="num">${pc(r.last)}</td><td class="num">${r.delta>0?'+':''}${Math.round(r.delta*100)} pts</td></tr>`).join('');
+  const moveTbl=(title,l)=>l.length?`<div><h3 class="sub-h">${title}</h3><div class="scroll"><table class="tbl"><thead><tr><th>${state.cfg.names?'Name':'Member Id'}</th><th>Section</th><th class="num">First</th><th class="num">Latest</th><th class="num">Change</th></tr></thead><tbody>${moveRows(l)}</tbody></table></div></div>`:'';
+
+  $('#report').innerHTML=`
+  <header class="rp-head">
+    <p class="rp-org" id="rpOrg">${esc(c.institution)}</p>
+    <h1 id="rpTitle">${esc(c.title)}</h1>
+    <dl class="facts">
+      ${c.batch?`<div><dt>Batch</dt><dd>${esc(c.batch)}</dd></div>`:''}
+      <div><dt>Showing</dt><dd>${esc(scopeLabel())}</dd></div>
+      <div><dt>Tests</dt><dd>${A.T}</dd></div>
+      <div><dt>Generated</dt><dd>${today()}</dd></div>
+    </dl>
+  </header>
+  <div class="kpis">${kpis.map(k=>`<div class="kpi"><div class="v">${k[0]}<small>${k[1]}</small></div><div class="l">${k[2]}</div></div>`).join('')}</div>
+
+  <section class="blk" id="s-overview">
+    <h2>Key observations</h2>
+    <ul class="obs">${A.insights.map(i=>`<li class="${i.tone}"><span><span class="sr">${i.tone==='warn'?'Needs attention: ':i.tone==='good'?'Positive: ':'Note: '}</span>${esc(i.text)}</span></li>`).join('')}</ul>
+    ${A.followups.length?`<h3 class="sub-h">Suggested follow-up</h3><ul class="obs">${A.followups.map(t=>`<li><span>${esc(t)}</span></li>`).join('')}</ul>`:''}
+  </section>
+
+  <section class="blk" id="s-tests">
+    <h2>Test-wise performance</h2>
+    <p class="lead">Average score is calculated on students who appeared. Participation is the share of students who appeared.</p>
+    <div class="chart"><canvas id="chTrend" role="img" aria-label="Average score and participation by test"></canvas></div>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Test</th><th class="num">Appeared</th><th class="num">Absent</th><th class="num">Participation</th><th class="num">Avg marks</th><th class="num">Avg %</th><th class="num">Median</th><th class="num">Highest</th><th class="num">Lowest</th><th class="num">Pass rate</th></tr></thead><tbody>${testsRows}</tbody></table></div>
+    <h3 class="sub-h">Score distribution</h3>
+    <p class="lead">Students who appeared, grouped by the percentage they scored.</p>
+    <div class="chart"><canvas id="chBands" role="img" aria-label="Number of students in each score band by test"></canvas></div>
+  </section>
+
+  ${A.multiGroup?`<section class="blk" id="s-sections">
+    <h2>Section comparison</h2>
+    <p class="lead">Average score by test for each section. Table cells are shaded by score band.</p>
+    <div class="chart tall"><canvas id="chGroups" role="img" aria-label="Average score by test for each section"></canvas></div>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Section</th><th class="num">Students</th><th class="num">Participation</th><th class="num">Avg score</th><th class="num">Pass rate</th><th class="num">Attempted all</th><th class="num">At risk</th></tr></thead><tbody>${groupRows}</tbody></table></div>
+    <h3 class="sub-h">Average score by test and section</h3>${matrix(x=>x.avgPct)}
+    <h3 class="sub-h">Participation by test and section</h3>${matrix(x=>x.part)}
+    ${legend}
+  </section>`:''}
+
+  <section class="blk" id="s-students">
+    <h2>Student performance</h2>
+    <p class="lead">Ranking uses ${A.opts.absentZero?'total marks across all tests, with absence counted as zero':'the average percentage on tests attempted'}.</p>
+    <h3 class="sub-h">Tests attempted per student</h3>
+    <div class="chart short"><canvas id="chAttend" role="img" aria-label="Number of students by count of tests attempted"></canvas></div>
+    <div>
+      <div><h3 class="sub-h">Top performers</h3>
+        <div class="scroll"><table class="tbl"><thead><tr><th class="num">Rank</th><th>${state.cfg.names?'Name':'Member Id'}</th><th>Section</th><th class="num">Attempted</th><th class="num">Marks</th><th class="num">Avg %</th></tr></thead><tbody>${topRows}</tbody></table></div></div>
+      <div><h3 class="sub-h">Needing attention</h3>
+        ${A.attention.length?`<div class="scroll"><table class="tbl"><thead><tr><th>${state.cfg.names?'Name':'Member Id'}</th><th>Section</th><th class="num">Attempted</th><th class="num">Avg %</th><th>Reason</th></tr></thead><tbody>${attRows}</tbody></table></div>${A.attention.length>20?`<p class="hint" style="margin-top:8px">Showing 20 of ${A.attention.length}. The full list is in the results table below.</p>`:''}`:`<div class="empty">No students fall below the pass mark or attempted fewer than half of the tests.</div>`}</div>
+    </div>
+    ${(A.improved.length||A.declined.length)?`<div class="two">${moveTbl('Biggest improvement',A.improved)}${moveTbl('Biggest decline',A.declined)}</div><p class="hint">Change compares the first and latest tests each student attempted.</p>`:''}
+  </section>
+
+  <section class="blk" id="s-all">
+    <h2>All results</h2>
+    <p class="lead">Marks for every student. Cells are shaded by score band; Abs means the student did not appear.</p>
+    <div class="tools">
+      <input type="search" id="q" placeholder="Search by name or Member Id" aria-label="Search students" autocomplete="off">
+      <span class="count" id="stuCount"></span>
+    </div>
+    <div class="scroll"><table class="tbl" id="stuTbl"><thead><tr>
+      <th class="num" aria-sort="ascending"><button data-sort="rank">Rank</button></th>
+      <th><button data-sort="name">Name</button></th><th><button data-sort="group">Section</button></th>
+      ${A.tests.map((t,i)=>`<th class="num"><button data-sort="t${i}">${esc(t.label)}</button></th>`).join('')}
+      <th class="num"><button data-sort="att">Attempted</button></th><th class="num"><button data-sort="avg">Avg %</button></th><th>Status</th>
+    </tr></thead><tbody id="stuBody"></tbody></table></div>
+    <div class="tools"><button class="btn small" id="moreBtn">Show more</button><button class="btn small" id="allBtn">Show all</button></div>
+  </section>`;
+  $('#q').value=state.q;
+  renderStudents();
+}
+function sortVal(r,k){
+  if(k==='rank')return r.rank;if(k==='name')return r.name.toLowerCase();if(k==='group')return r.group;
+  if(k==='att')return r.att;if(k==='avg')return r.avgPct==null?-1:r.avgPct;
+  if(k[0]==='t'){const v=r.scores[+k.slice(1)];return v==null?-1:v;}
+  return r.rank;
+}
+function renderStudents(){
+  const A=state.A,q=state.q.trim().toLowerCase();
+  let list=A.rows.filter(r=>!q||r.name.toLowerCase().includes(q)||String(r.id).toLowerCase().includes(q));
+  const {key,dir}=state.sort;
+  list=[...list].sort((a,b)=>{const x=sortVal(a,key),y=sortVal(b,key);const c=typeof x==='string'?natural(x,y):x-y;return (c*dir)||(a.rank-b.rank);});
+  const shown=list.slice(0,state.limit);
+  $('#stuBody').innerHTML=shown.map(r=>`<tr><td class="num">${r.rank}</td><td class="name">${esc(r.name)}</td><td>${esc(r.group)}</td>${r.scores.map((v,i)=>v==null?`<td class="num abs">Abs</td>`:`<td class="num ${heat(v/A.tests[i].max)}">${v}</td>`).join('')}<td class="num">${r.att}/${A.T}</td><td class="num ${heat(r.avgPct)}">${pc(r.avgPct)}</td><td>${statusText(r).split(', ').filter(Boolean).map(s=>`<span class="tag warn">${esc(s)}</span>`).join('')}</td></tr>`).join('')||`<tr><td colspan="${A.T+6}" class="abs">No students match your search.</td></tr>`;
+  $('#stuCount').textContent=`Showing ${shown.length} of ${list.length}`;
+  $('#moreBtn').hidden=$('#allBtn').hidden=shown.length>=list.length;
+  document.querySelectorAll('#stuTbl th').forEach(th=>{const b=th.querySelector('button');if(!b)return;th.setAttribute('aria-sort',b.dataset.sort===key?(dir>0?'ascending':'descending'):'none');});
+}
+
+/* ---------- downloads ---------- */
+async function saveFile(filename,blob){
+  let dl=null;
+  try{if(window.claude&&typeof window.claude.use==='function')dl=await window.claude.use('downloads');}catch(e){dl=null;}
+  if(dl){
+    try{await dl.save({filename,data:blob});toast('Saved '+filename);}
+    catch(e){
+      if(e&&e.code==='declined')toast('Download cancelled.');
+      else if(e&&e.code==='rate_limited')toast('Another save prompt is open. Finish it and try again.');
+      else toast('The file could not be saved here.');
+    }
+    return;
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  toast('Downloaded '+filename);
+}
+const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'report';
+function isoDate(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+
+async function downloadPdf(){
+  const btn=$('#btnPdf');
+  if(typeof window.jspdf==='undefined'||typeof Chart==='undefined'){toast('The PDF tools did not load. Check your connection and reload the page.');return;}
+  if(!state.A.kpi.attempts){toast('There are no scores to report for this selection.');return;}
+  btn.disabled=true;const old=btn.textContent;btn.textContent='Preparing PDF\u2026';
+  await new Promise(r=>setTimeout(r,40));
+  try{
+    const A=state.A;
+    const img={
+      trend:chartImage(cfgTrend,A,1040,395),
+      bands:chartImage(cfgBands,A,1040,395),
+      groups:A.multiGroup?chartImage(cfgGroups,A,1040,416):null,
+      attendance:chartImage(cfgAttend,A,1040,312)
+    };
+    const cfg={title:state.cfg.title||'Test Analysis Report',institution:state.cfg.institution.trim(),preparedBy:state.cfg.preparedBy.trim(),
+      batch:state.cfg.batch,scope:scopeLabel(),date:today(),annexure:state.cfg.annexure,names:state.cfg.names};
+    const doc=buildPdf(window.jspdf.jsPDF,A,cfg,img);
+    const blob=doc.output('blob');
+    const scope=state.opts.group==='all'?'':'-'+slug(state.opts.group);
+    await saveFile(slug(cfg.title)+scope+'-'+isoDate()+'.pdf',blob);
+  }catch(e){console.error(e);toast('The PDF could not be created. Try again, or turn off the student-wise results.');}
+  finally{btn.disabled=false;btn.textContent=old;}
+}
+async function downloadXlsx(){
+  if(typeof XLSX==='undefined'){toast('The spreadsheet tools did not load. Reload the page and try again.');return;}
+  try{
+    const wb=XLSX.utils.book_new();
+    summarySheets(state.A).forEach(s=>{
+      const ws=XLSX.utils.aoa_to_sheet(s.rows);
+      ws['!cols']=s.rows[0].map((h,i)=>({wch:Math.min(38,Math.max(10,String(h).length+2,...s.rows.slice(1,40).map(r=>String(r[i]==null?'':r[i]).length+2)))}));
+      XLSX.utils.book_append_sheet(wb,ws,s.name);
+    });
+    const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const scope=state.opts.group==='all'?'':'-'+slug(state.opts.group);
+    await saveFile(slug(state.cfg.title)+scope+'-summary-'+isoDate()+'.xlsx',blob);
+  }catch(e){console.error(e);toast('The Excel summary could not be created.');}
+}
+
+/* ---------- events ---------- */
+function init(){
+  const drop=$('#drop'),file=$('#file');
+  drop.addEventListener('click',pickFile);
+  drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pickFile();}});
+  ['dragenter','dragover'].forEach(t=>window.addEventListener(t,e=>{e.preventDefault();if(!state.ds)drop.classList.add('over');}));
+  ['dragleave','drop'].forEach(t=>window.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over');}));
+  window.addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)loadFile(f);});
+  file.addEventListener('change',()=>{if(file.files[0])loadFile(file.files[0]);});
+  $('#replaceTop').addEventListener('click',pickFile);
+  $('#fTitle').addEventListener('input',e=>{state.cfg.title=e.target.value;const t=$('#rpTitle');if(t)t.textContent=e.target.value;});
+  $('#fOrg').addEventListener('input',e=>{state.cfg.institution=e.target.value;const t=$('#rpOrg');if(t)t.textContent=e.target.value;});
+  $('#fBy').addEventListener('input',e=>{state.cfg.preparedBy=e.target.value;});
+  $('#fGroup').addEventListener('change',e=>{state.opts.group=e.target.value;state.limit=25;refresh();});
+  $('#fPass').addEventListener('input',e=>{$('#passOut').textContent=e.target.value+'%';});
+  $('#fPass').addEventListener('change',e=>{state.opts.pass=+e.target.value;refresh();});
+  $('#fZero').addEventListener('change',e=>{state.opts.absentZero=e.target.checked;refresh();});
+  $('#fAnnex').addEventListener('change',e=>{state.cfg.annexure=e.target.checked;});
+  $('#fNames').addEventListener('change',e=>{state.cfg.names=e.target.checked;if(state.A)refresh();});
+  $('#btnPdf').addEventListener('click',downloadPdf);
+  $('#btnXlsx').addEventListener('click',downloadXlsx);
+  $('#report').addEventListener('click',e=>{
+    const b=e.target.closest('[data-sort]');
+    if(b){const k=b.dataset.sort;state.sort=state.sort.key===k?{key:k,dir:-state.sort.dir}:{key:k,dir:(k==='name'||k==='group'||k==='rank')?1:-1};renderStudents();return;}
+    if(e.target.id==='moreBtn'){state.limit+=50;renderStudents();}
+    if(e.target.id==='allBtn'){state.limit=1e9;renderStudents();}
+  });
+  $('#report').addEventListener('input',e=>{if(e.target.id==='q'){state.q=e.target.value;state.limit=25;renderStudents();}});
+  const redraw=()=>{if(state.A&&state.A.kpi.attempts)drawCharts();};
+  if(window.matchMedia)window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',redraw);
+  new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+}
+init();
+</script>
+</body>
+</html>

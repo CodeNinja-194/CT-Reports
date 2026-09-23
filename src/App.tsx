@@ -7,6 +7,7 @@ import { CourseReportHub } from './features/course-report/CourseReportHub';
 import { SingleTestPage } from './features/single-test/SingleTestPage';
 import { TestsHub } from './features/single-test/TestsHub';
 import { SegregationPage } from './features/segregation/SegregationPage';
+import { GroupTestPage } from './features/group-test/GroupTestPage';
 
 export function App() {
   const [currentPath, setCurrentPath] = useState<string>(() => {
@@ -44,6 +45,8 @@ export function App() {
         return <SingleTestPage onNavigate={navigate} />;
       case '/tests/segregation':
         return <SegregationPage onNavigate={navigate} />;
+      case '/tests/group-test':
+        return <GroupTestPage onNavigate={navigate} />;
       default:
         // Fallback or subpath match
         if (currentPath.startsWith('/course-report')) {
@@ -54,6 +57,9 @@ export function App() {
         }
         if (currentPath.startsWith('/tests/segregation')) {
           return <SegregationPage onNavigate={navigate} />;
+        }
+        if (currentPath.startsWith('/tests/group-test')) {
+          return <GroupTestPage onNavigate={navigate} />;
         }
         return <HomePage onNavigate={navigate} />;
     }

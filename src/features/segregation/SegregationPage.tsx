@@ -582,7 +582,7 @@ export function SegregationPage({ onNavigate }: SegregationPageProps) {
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
-                                    {cat.list.slice(0, 20).map((c, i) => (
+                                    {cat.list.map((c, i) => (
                                       <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                                         <td className="py-1 px-2 text-slate-400">{i + 1}</td>
                                         {data.hasId && <td className="py-1 px-2 font-mono text-slate-500">{c.id}</td>}
@@ -600,11 +600,6 @@ export function SegregationPage({ onNavigate }: SegregationPageProps) {
                                     ))}
                                   </tbody>
                                 </table>
-                                {cat.list.length > 20 && (
-                                  <div className="p-2 text-center text-[11px] text-slate-400 bg-slate-50/40 dark:bg-slate-800/20">
-                                    Showing top 20 of {cat.list.length} candidates in {cat.label} tier.
-                                  </div>
-                                )}
                               </div>
                             )}
                           </div>
