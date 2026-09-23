@@ -1,0 +1,121 @@
+CT Reports - AI Handoff and Maintenance Notes
+
+Purpose
+=======
+This file is a compact handoff for the next AI agent working on the CT Reports repository. Read it before changing report parsing, navigation, exports, or UI behavior.
+
+Project Summary
+===============
+CT Reports is a 100% client-side React + TypeScript + Vite reporting portal for CodeTantra trainers. Excel/CSV files are parsed in the browser; student data is not sent to a server. The app provides course progress reports, single-test reports, segregation reports, and group-test reports.
+
+Current Tech Stack
+==================
+- React 18.3 with React DOM
+- TypeScript 5.7, strict mode
+- Vite 6
+- Tailwind CSS 3 with PostCSS and Autoprefixer
+- Lucide React icons
+- clsx and tailwind-merge for class composition
+- XLSX / SheetJS for XLSX, XLS, and CSV parsing/export
+- jsPDF and jspdf-autotable for PDF generation
+- html2canvas for rendered document support
+- JSZip for ZIP exports
+- Framer Motion, Motion, Anime.js, and canvas-confetti are installed; use existing patterns before adding more animation
+- Vercel deployment with SPA rewrite in vercel.json
+
+Important Commands
+==================
+npm install
+npm run dev
+npm run build       # TypeScript check plus Vite production build
+npm run preview
+
+git diff --check    # whitespace validation
+
+Application Structure
+=====================
+- src/App.tsx: path-based client-side router using window.history; there is no React Router dependency.
+- src/components/layout/Navbar.tsx: desktop dropdown and mobile drawer navigation.
+- src/components/layout/Breadcrumbs.tsx: page breadcrumbs.
+- src/components/layout/Footer.tsx: footer.
+- src/components/ui/: shared Card, Button, Input, Select, and Badge components.
+- src/components/shared/: FileDropzone, KPI cards, charts, progress rows, and empty state.
+- src/lib/theme.tsx: light/dark theme context.
+- src/lib/utils.ts: formatting, group labels, safe filenames, and Blob downloads.
+- src/types/: report data contracts.
+
+Routes
+======
+- /: home page
+- /course-report: course report hub
+- /course-report/group-wise: group-wise course report
+- /tests: test report hub
+- /tests/single-test: attempted/unattempted single test report
+- /tests/segregation: section score and performer band report
+- /tests/group-test: cohort/group comparison report
+
+Implemented Features
+====================
+1. Course Intelligence
+- Multi-section course progress aggregation.
+- Group and section views.
+- Started, not started, and password-not-set tracking.
+- At-risk learner identification.
+- Course HTML, Excel, and PDF generation.
+
+2. Single Test Report
+- Accepts attempted and optional not-attempted files.
+- Merges records, computes pass rate, score distribution, group rankings, and student status.
+- Generates college summary PDF, group PDF, and ZIP package.
+- Uses files in src/features/single-test/.
+
+3. Segregation Test Report
+- Parses section headers such as Coding - Easy (10M).
+- Computes section averages, score bands, group statistics, insights, top performers, and unattempted candidates.
+- Performer bands are Advanced, Good, Average, and Needs focus.
+- Section category records are stored in analysis.secCats[*].cats[*].list.
+- The UI now renders the complete student list for each section/category instead of only the first 20.
+- The PDF now includes student detail tables for every section/category, including member ID, name, group, section score, and percentage.
+
+4. Group Test Report
+- Implemented in src/features/group-test/GroupTestPage.tsx.
+- Reuses segregation parser and analysis because the input is one combined assessment sheet with groups and section marks.
+- Provides upload/sample workflow, report metadata, thresholds, group comparison, section summary, top performers, and PDF export.
+- It is registered in App.tsx and shown in TestsHub.tsx.
+- It is now also directly available from the desktop and mobile Tests menus in Navbar.tsx.
+
+Known Bugs / Risks / Follow-up Work
+===================================
+- The segregation and group-test pages reuse the segregation PDF generator. If their PDFs need different layouts or labels, extract a shared report model and separate generators instead of adding more conditionals.
+- Large exports can produce very large PDF files and long browser tasks because all calculations and generation run on the main thread. Consider chunking/yielding or a Web Worker for large cohorts.
+- Production builds currently report a large Vite chunk warning because XLSX, jsPDF, and related libraries are bundled together. Consider route-level dynamic imports/manual chunks if load time becomes a problem.
+- Parser matching relies on flexible header regular expressions. Any new spreadsheet format should add a focused parser test or sample before changing those expressions.
+- Numeric parsing intentionally converts non-numeric values to zero in segregationParser.ts. Confirm this behavior for any new source format because blank, absent, and genuine zero scores can have different meanings.
+- Group labels are shortened with shortGroup() by removing a leading YYYY-YYYY- prefix. Preserve raw group values for identity and use the shortened value only for display.
+- The app has custom history routing. Every new route must be added to both the exact switch and the fallback startsWith branches in App.tsx, plus the relevant hub and Navbar menu.
+- Navbar has separate desktop and mobile menu implementations. Add new report links to both.
+- Shared Badge variants are limited to default, success, warning, danger, navy, outline, and slate. Do not use an info variant.
+- Existing source files may contain user changes. Do not revert unrelated modifications.
+- .env.local contains a Vercel OIDC token and is ignored by git. Because the token was exposed in a shared context, rotate/revoke it in Vercel and create a fresh local token. Never copy it into source files, documentation, commits, or logs.
+
+Issue History
+=============
+GitHub issue #1: Segregation test report PDF showed section-wise performer counts but omitted the student records belonging to each category. The root cause was count-only rendering in the section-wise category PDF output, combined with a UI list truncated to 20 records. Both paths are now fixed.
+
+Validation Checklist
+====================
+- Run npm run build after parser, UI, route, or export changes.
+- Use the browser to open /tests/group-test and click Load Sample Group Test.
+- Confirm group count, group comparison table, section table, top performers, and PDF button render.
+- Open /tests/segregation with sample data and confirm each section/category shows student records.
+- Verify desktop Tests dropdown and mobile Test Reports drawer both contain Group Test Report.
+- Run git diff --check before handoff.
+
+Change Guidelines For Next Agent
+================================
+- Prefer existing parser, analysis, shared components, and Tailwind conventions.
+- Keep report calculations in feature utility files and UI rendering in page/components.
+- Preserve client-only processing and do not introduce a server upload path without explicit approval.
+- Keep student-level data out of analytics, telemetry, and external requests.
+- Add focused sample data or tests when changing spreadsheet header detection or score classification.
+- Do not commit generated dist output, node_modules, .vercel metadata, or environment tokens.

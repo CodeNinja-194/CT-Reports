@@ -208,6 +208,27 @@ export function Navbar({ currentPath, onNavigate }: NavbarProps) {
                     </div>
                   </button>
                   <button
+                    onClick={() => handleNav('/tests/group-test')}
+                    className={`w-full text-left p-2.5 rounded-lg flex items-start gap-3 transition-colors ${
+                      currentPath === '/tests/group-test'
+                        ? 'bg-slate-100 dark:bg-slate-800/80 text-[#1B2A4A] dark:text-[#7FA7DA]'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-200'
+                    }`}
+                  >
+                    <div className="p-2 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 mt-0.5">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold flex items-center gap-1">
+                        Group Test Report
+                        <ArrowRight className="w-3 h-3 opacity-60" />
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                        Compare cohorts, section performance, and student-level results
+                      </p>
+                    </div>
+                  </button>
+                  <button
                     onClick={() => handleNav('/tests')}
                     className="w-full text-left px-3 py-2 mt-1 rounded-md text-xs font-medium text-slate-500 hover:text-[#1B2A4A] dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/40"
                   >
@@ -297,6 +318,17 @@ export function Navbar({ currentPath, onNavigate }: NavbarProps) {
             >
               <span>Segregation</span>
               <Layers className="w-4 h-4 text-slate-400" />
+            </button>
+            <button
+              onClick={() => handleNav('/tests/group-test')}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between mt-1 ${
+                currentPath === '/tests/group-test'
+                  ? 'bg-slate-100 dark:bg-slate-800 text-[#1B2A4A] dark:text-[#7FA7DA] font-semibold'
+                  : 'text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              <span>Group Test Report</span>
+              <Users className="w-4 h-4 text-slate-400" />
             </button>
           </div>
         </div>
